@@ -1,36 +1,43 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Scan Médaillon Yo-kai Watch</title>
-<style>
-  body { font-family: Arial, sans-serif; margin: 20px; background: #f0f4f8; color: #222; }
-  h1 { color: #ff5f00; }
-  #result { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 0 10px #ccc; max-width: 600px; }
-  img { max-width: 150px; display: block; margin: 10px 0; }
-  button {
-    background: #ff5f00; color: white; border: none; padding: 10px 15px;
-    margin: 5px; border-radius: 5px; cursor: pointer; font-size: 16px;
-  }
-  button:hover { background: #e04e00; }
-  input[type="file"] { display: none; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scanner Médaillon Yo-kai</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    button {
+      margin: 5px;
+      padding: 10px 15px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #result {
+      margin-top: 20px;
+    }
+    img {
+      max-width: 150px;
+      display: block;
+      margin-top: 10px;
+    }
+  </style>
 </head>
 <body>
+  <h1>Scanner Médaillon Yo-kai</h1>
 
-<h1>Scan Médaillon Yo-kai Watch</h1>
+  <button id="takePhotoBtn">Prendre une photo</button>
+  <button id="choosePhotoBtn">Choisir dans la galerie</button>
 
-<button id="takePhotoBtn">📷 Prendre une photo</button>
-<button id="choosePhotoBtn">🖼️ Choisir une photo</button>
+  <!-- Input cachés -->
+  <input type="file" accept="image/*" capture="environment" id="takePhotoInput" style="display:none" />
+  <input type="file" accept="image/*" id="choosePhotoInput" style="display:none" />
 
-<input type="file" id="takePhotoInput" accept="image/*" capture="environment" />
-<input type="file" id="choosePhotoInput" accept="image/*" />
+  <div id="result"></div>
 
-<div id="result"></div>
-
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-<script src="script.js"></script>
-
+  <script src="https://unpkg.com/html5-qrcode@2.3.9/minified/html5-qrcode.min.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
