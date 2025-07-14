@@ -6,10 +6,10 @@
 <title>Scanner Médaillon Yo-kai Watch</title>
 <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
 <style>
-  body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; color: #222; }
-  button { margin: 10px 5px; padding: 10px 15px; font-size: 1rem; }
-  #result { margin-top: 20px; padding: 10px; background: white; border-radius: 5px; min-height: 120px; }
-  #log { margin-top: 20px; background: black; color: #0f0; font-family: monospace; font-size: 0.9rem; height: 200px; overflow-y: auto; padding: 10px; border-radius: 5px; }
+  body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; color: #222; }
+  button { margin: 10px 10px 10px 0; padding: 10px 15px; font-size: 1rem; }
+  #result { margin-top: 20px; padding: 10px; background: #fff; border-radius: 5px; min-height: 100px; }
+  #log { margin-top: 20px; background: black; color: #0f0; font-family: monospace; font-size: 0.9rem; height: 160px; overflow-y: auto; padding: 10px; border-radius: 5px; }
   img { max-width: 100px; margin-right: 10px; vertical-align: middle; }
 </style>
 </head>
@@ -20,10 +20,11 @@
 <button id="takePhotoBtn">Prendre une photo</button>
 <button id="choosePhotoBtn">Choisir une photo dans la galerie</button>
 
+<!-- Inputs invisibles -->
 <input type="file" accept="image/*" capture="environment" id="takePhotoInput" style="display:none" />
 <input type="file" accept="image/*" id="choosePhotoInput" style="display:none" />
 
-<div id="result">En attente d'une photo ou sélection de la galerie...</div>
+<div id="result">En attente d'une photo ou sélection...</div>
 <div id="log"></div>
 
 <script>
@@ -36,54 +37,56 @@
 
   let html5QrCode = new Html5Qrcode();
 
-  // Fonction pour écrire dans le journal visible
   function appendLog(msg) {
     const time = new Date().toLocaleTimeString();
     logDiv.innerHTML += `[${time}] ${msg}<br>`;
     logDiv.scrollTop = logDiv.scrollHeight;
   }
 
-  // Fonction pour afficher un message résultat propre
   function showResult(html, isError = false) {
     resultDiv.innerHTML = `<div style="color: ${isError ? 'red' : 'green'}">${html}</div>`;
   }
 
+  // Ouvre la caméra (bouton prendre photo)
   takePhotoBtn.addEventListener('click', () => {
-    appendLog("Ouverture de l'appareil photo...");
-    takePhotoInput.value = null;
+    appendLog("Bouton 'Prendre une photo' cliqué.");
+    takePhotoInput.value = null; // reset input pour forcer la sélection
     takePhotoInput.click();
   });
 
+  // Ouvre la galerie (bouton choisir photo)
   choosePhotoBtn.addEventListener('click', () => {
-    appendLog("Ouverture de la galerie...");
+    appendLog("Bouton 'Choisir une photo dans la galerie' cliqué.");
     choosePhotoInput.value = null;
     choosePhotoInput.click();
   });
 
+  // Après prise photo
   takePhotoInput.addEventListener('change', async (e) => {
-    if (e.target.files.length === 0) {
+    if (!e.target.files.length) {
       appendLog("Aucune photo prise.");
       showResult("Aucune photo prise.", true);
       return;
     }
     const file = e.target.files[0];
-    appendLog(`Photo prise : ${file.name}`);
+    appendLog(`Photo prise: ${file.name}`);
     await scanFile(file);
   });
 
+  // Après sélection photo
   choosePhotoInput.addEventListener('change', async (e) => {
-    if (e.target.files.length === 0) {
+    if (!e.target.files.length) {
       appendLog("Aucune photo sélectionnée.");
       showResult("Aucune photo sélectionnée.", true);
       return;
     }
     const file = e.target.files[0];
-    appendLog(`Photo choisie : ${file.name}`);
+    appendLog(`Photo sélectionnée: ${file.name}`);
     await scanFile(file);
   });
 
   async function scanFile(file) {
-    showResult("Analyse de l'image en cours...");
+    showResult("Analyse en cours...");
     try {
       const qrCodeMessage = await html5QrCode.scanFile(file, true);
       appendLog(`QR Code détecté : ${qrCodeMessage}`);
@@ -106,7 +109,7 @@
       displayMedallion(medaillon);
 
     } catch (err) {
-      appendLog("❌ Aucun QR code détecté dans l'image.");
+      appendLog(`❌ Aucun QR code détecté. Détail: ${err.message || err}`);
       showResult("❌ Aucun QR code détecté dans l'image.", true);
     }
   }
