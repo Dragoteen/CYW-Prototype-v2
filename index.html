@@ -9,25 +9,28 @@
   h1 { color: #ff5f00; }
   #result { margin-top: 20px; padding: 15px; background: white; border-radius: 8px; box-shadow: 0 0 10px #ccc; max-width: 600px; }
   img { max-width: 150px; display: block; margin: 10px 0; }
-  button { background: #ff5f00; color: white; border: none; padding: 10px 15px; margin: 5px; border-radius: 5px; cursor: pointer; }
+  button {
+    background: #ff5f00; color: white; border: none; padding: 10px 15px;
+    margin: 5px; border-radius: 5px; cursor: pointer; font-size: 16px;
+  }
   button:hover { background: #e04e00; }
-  #video { width: 100%; max-width: 400px; border-radius: 8px; }
+  input[type="file"] { display: none; }
 </style>
 </head>
 <body>
 
 <h1>Scan Médaillon Yo-kai Watch</h1>
 
-<button id="startScan">Lancer la caméra pour scanner</button>
-<button id="stopScan" disabled>Arrêter la caméra</button>
-<input type="file" id="uploadFile" accept="image/*" />
-<div id="videoContainer" style="margin-top: 20px;">
-  <video id="video" autoplay></video>
-</div>
+<button id="takePhotoBtn">📷 Prendre une photo</button>
+<button id="choosePhotoBtn">🖼️ Choisir une photo</button>
+
+<input type="file" id="takePhotoInput" accept="image/*" capture="environment" />
+<input type="file" id="choosePhotoInput" accept="image/*" />
 
 <div id="result"></div>
 
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <script src="script.js"></script>
+
 </body>
 </html>
