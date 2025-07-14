@@ -8,25 +8,38 @@ const resultDiv = document.getElementById('result');
 
 let html5QrCode;
 
+function logAndShow(msg, isError = false) {
+  console.log(msg);
+  resultDiv.innerHTML = `<p style="color:${isError ? 'red' : 'green'};">${msg}</p>`;
+}
+
 takePhotoBtn.addEventListener('click', () => {
-  takePhotoInput.value = null; // reset input
+  logAndShow("Ouverture de l'appareil photo...");
+  takePhotoInput.value = null;
   takePhotoInput.click();
 });
 
 choosePhotoBtn.addEventListener('click', () => {
-  choosePhotoInput.value = null; // reset input
+  logAndShow("Ouverture de la galerie...");
+  choosePhotoInput.value = null;
   choosePhotoInput.click();
 });
 
 takePhotoInput.addEventListener('change', async (e) => {
-  if (e.target.files.length === 0) return;
+  if (e.target.files.length === 0) {
+    logAndShow("Aucune photo prise.", true);
+    return;
+  }
   const file = e.target.files[0];
   console.log("Photo prise :", file);
   await scanFile(file);
 });
 
 choosePhotoInput.addEventListener('change', async (e) => {
-  if (e.target.files.length === 0) return;
+  if (e.target.files.length === 0) {
+    logAndShow("Aucune photo sélectionnée.", true);
+    return;
+  }
   const file = e.target.files[0];
   console.log("Photo choisie :", file);
   await scanFile(file);
@@ -34,13 +47,18 @@ choosePhotoInput.addEventListener('change', async (e) => {
 
 async function scanFile(file) {
   resetResult();
+  logAndShow("Analyse de l'image en cours...");
+
+  if (!window.Html5Qrcode) {
+    logAndShow("Erreur : librairie html5-qrcode non chargée", true);
+    return;
+  }
 
   if (!html5QrCode) {
     html5QrCode = new Html5Qrcode();
   }
 
   try {
-    console.log("Début du scan...");
     const qrCodeMessage = await html5QrCode.scanFile(file, true);
     console.log("QR Code détecté :", qrCodeMessage);
 
@@ -48,14 +66,14 @@ async function scanFile(file) {
     console.log("Code unique extrait :", codeUnique);
 
     if (!codeUnique) {
-      showError("❌ QR code détecté mais code unique non extrait.");
+      logAndShow("❌ QR code détecté mais code unique non extrait.", true);
       return;
     }
 
     const medaillon = await getMedallionByCode(codeUnique);
 
     if (!medaillon) {
-      showError("❌ Médaillon inconnu pour ce code unique.");
+      logAndShow("❌ Médaillon inconnu pour ce code unique.", true);
       return;
     }
 
@@ -63,16 +81,12 @@ async function scanFile(file) {
 
   } catch (error) {
     console.error("Erreur de scan :", error);
-    showError("❌ Aucun QR code détecté dans l'image.");
+    logAndShow("❌ Aucun QR code détecté dans l'image.", true);
   }
 }
 
 function resetResult() {
   resultDiv.innerHTML = '';
-}
-
-function showError(msg) {
-  resultDiv.innerHTML = `<p style="color:red;">${msg}</p>`;
 }
 
 function displayMedallion(medaillon) {
@@ -95,7 +109,6 @@ function displayMedallion(medaillon) {
 
 function extractCodeUnique(qrCodeMessage) {
   if (!qrCodeMessage) return null;
-  // Exemple attendu : "http://YW.B-BOYS.JP/04P75B6AFJOPJH52H3UC6911MOTSFE55B"
   const parts = qrCodeMessage.trim().split('/');
   return parts[parts.length - 1];
 }
@@ -111,3 +124,6 @@ async function getMedallionByCode(code) {
     return null;
   }
 }
+
+// Affiche un message initial pour indiquer que le site attend une action
+logAndShow("En attente d'une photo ou sélection de la galerie...");
