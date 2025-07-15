@@ -1,132 +1,85 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Scanner QR Code</title>
-  <style>
-    body { font-family: sans-serif; text-align: center; padding: 20px; }
-    canvas { margin-top: 10px; border: 1px solid #ccc; max-width: 100%; display: none; }
-    #message { margin-top: 10px; font-weight: bold; }
-    button { padding: 10px 20px; margin: 10px; font-size: 16px; }
-    #card {
-      display: none;
-      margin: 20px auto;
-      padding: 20px;
-      border: 2px solid #444;
-      border-radius: 10px;
-      max-width: 400px;
-      background: #f9f9f9;
-      text-align: left;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    #card img {
-      max-width: 100px;
-      margin: 10px 5px;
-    }
-    .label {
-      font-weight: bold;
-      color: #333;
-    }
-  </style>
-</head>
-<body>
+<!-- ... ton <head> et <body> restent inchangés jusqu'au <script> -->
 
-  <h1>Scanner un QR Code</h1>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+<script>
+  const fileInputs = [document.getElementById("file-camera"), document.getElementById("file-gallery")];
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const message = document.getElementById("message");
+  const codeUniqueTexte = document.getElementById("code_unique_texte");
+  const card = document.getElementById("card");
 
-  <button onclick="document.getElementById('file-camera').click()">📷 Prendre une photo</button>
-  <button onclick="document.getElementById('file-gallery').click()">🖼️ Choisir une photo</button>
+  fileInputs.forEach(input => {
+    input.addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-  <input type="file" accept="image/*" capture="environment" id="file-camera" style="display:none" />
-  <input type="file" accept="image/*" id="file-gallery" style="display:none" />
+      message.textContent = "Chargement de l'image...";
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.style.display = "block";
+        message.textContent = "Analyse en cours...";
+        card.style.display = "none";
 
-  <canvas id="canvas"></canvas>
-  <div id="message">Aucune analyse en cours.</div>
-  <div id="code_unique_texte"></div>
+        try {
+          const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+          const binarizer = new ZXing.GlobalHistogramBinarizer(luminanceSource);
+          const binaryBitmap = new ZXing.BinaryBitmap(binarizer);
+          const reader = new ZXing.MultiFormatReader();
+          const result = reader.decode(binaryBitmap);
+          const code = result.getText();
+          const code_unique = code.replace(/http:\\/\\/yw\\.b-boys\\.jp\\//i, "");
 
-  <div id="card"></div>
+          message.textContent = "✅ QR Code détecté : " + code;
+          codeUniqueTexte.textContent = "Code Unique : " + code_unique;
 
-  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
-  <script>
-    const fileInputs = [document.getElementById("file-camera"), document.getElementById("file-gallery")];
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const message = document.getElementById("message");
-    const codeUniqueTexte = document.getElementById("code_unique_texte");
-    const card = document.getElementById("card");
-
-    fileInputs.forEach(input => {
-      input.addEventListener("change", event => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        message.textContent = "Chargement de l'image...";
-        const img = new Image();
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          canvas.style.display = "block";
-          message.textContent = "Analyse en cours...";
-          card.style.display = "none"; // Cache la carte précédente
-
-          try {
-            const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-            const binarizer = new ZXing.GlobalHistogramBinarizer(luminanceSource);
-            const binaryBitmap = new ZXing.BinaryBitmap(binarizer);
-            const reader = new ZXing.MultiFormatReader();
-            const result = reader.decode(binaryBitmap);
-            const code = result.getText();
-            const code_unique = code.replace(/http:\/\/yw\.b-boys\.jp\//i, "");
-
-            message.textContent = "✅ QR Code détecté : " + code;
-            codeUniqueTexte.textContent = "Code Unique : " + code_unique;
-
-            // 🔗 Requête API vers ta base de données
-            fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatch%20%5Bjp%5DM%C3%A9daillons/m%C3%A9daillons")
-              .then(res => res.json())
-              .then(data => {
-                const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
-                if (medaillon) {
-                  card.innerHTML = `
-                    <div class="label">Nom :</div> ${medaillon.nomYokai}<br>
-                    <div class="label">Tribu :</div> ${medaillon.tribuYokai}<br>
-                    <div class="label">Rang :</div> ${medaillon.rangYokai}<br>
-                    <div class="label">Type :</div> ${medaillon.typeMedaillon}<br>
-                    <div class="label">Rôle :</div> ${medaillon.rôleYokai}<br>
-                    <div class="label">Élément :</div> ${medaillon.élémentYokai}<br>
-                    <div class="label">Première apparition :</div> ${medaillon.premièreApparitionYokai}<br>
-                    <div class="label">Nourriture préférée :</div> ${medaillon.nourriturePréféréeYokai}<br>
-                    <div style="margin-top:10px;">
-                      <img src="${medaillon.imageMedaillon}" alt="Médaillon">
-                      <img src="${medaillon.imageYokai}" alt="Yo-kai">
-                    </div>
-                  `;
-                  card.style.display = "block";
-                } else {
-                  card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
-                  card.style.display = "block";
-                }
-              })
-              .catch(err => {
-                card.innerHTML = "❌ Erreur de connexion à la base de données.";
+          // Connexion à la base via l'API Sheety
+          fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatch%20%5Bjp%5DM%C3%A9daillons/medaillons")
+            .then(res => res.json())
+            .then(data => {
+              const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
+              if (medaillon) {
+                card.innerHTML = `
+                  <div class="label">Nom :</div> ${medaillon.nomYokai}<br>
+                  <div class="label">Tribu :</div> ${medaillon.tribuYokai}<br>
+                  <div class="label">Rang :</div> ${medaillon.rangYokai}<br>
+                  <div class="label">Type :</div> ${medaillon.typeMedaillon}<br>
+                  <div class="label">Rôle :</div> ${medaillon.rôleYokai}<br>
+                  <div class="label">Élément :</div> ${medaillon.élémentYokai}<br>
+                  <div class="label">Première apparition :</div> ${medaillon.premièreApparitionYokai}<br>
+                  <div class="label">Nourriture préférée :</div> ${medaillon.nourriturePréféréeYokai}<br>
+                  <div style="margin-top:10px;">
+                    <img src="${medaillon.imageMedaillon}" alt="Médaillon">
+                    <img src="${medaillon.imageYokai}" alt="Yo-kai">
+                  </div>
+                `;
                 card.style.display = "block";
-              });
+              } else {
+                card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
+                card.style.display = "block";
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              card.innerHTML = "❌ Erreur de connexion à la base de données.";
+              card.style.display = "block";
+            });
 
-          } catch (e) {
-            message.textContent = "❌ Aucun QR code détecté.";
-          }
-        };
+        } catch (e) {
+          console.error(e);
+          message.textContent = "❌ Aucun QR code détecté.";
+        }
+      };
 
-        img.onerror = () => {
-          message.textContent = "❌ Erreur de chargement de l'image.";
-        };
-        const reader = new FileReader();
-        reader.onload = e => img.src = e.target.result;
-        reader.readAsDataURL(file);
-      });
+      img.onerror = () => {
+        message.textContent = "❌ Erreur de chargement de l'image.";
+      };
+      const reader = new FileReader();
+      reader.onload = e => img.src = e.target.result;
+      reader.readAsDataURL(file);
     });
-  </script>
-
-</body>
-</html>
+  });
+</script>
