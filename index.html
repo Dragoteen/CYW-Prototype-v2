@@ -96,7 +96,7 @@
             codeUniqueTexte.textContent = "Code Unique : " + code_unique;
             message.textContent = "Chargement des données...";
 
-            fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatch%20%5Bjp%5DM%C3%A9daillons/medaillons")
+            fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons")
               .then(res => res.json())
               .then(data => {
                 const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
