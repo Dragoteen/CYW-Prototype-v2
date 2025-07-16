@@ -48,95 +48,125 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
   <script>
-    const fileInputs = [document.getElementById("file-camera"), document.getElementById("file-gallery")];
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const message = document.getElementById("message");
-    const codeUniqueTexte = document.getElementById("code_unique_texte");
-    const card = document.getElementById("card");
+  const fileInputs = [document.getElementById("file-camera"), document.getElementById("file-gallery")];
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+  const message = document.getElementById("message");
+  const codeUniqueTexte = document.getElementById("code_unique_texte");
+  const card = document.getElementById("card");
 
-    fileInputs.forEach(input => {
-      input.addEventListener("change", event => {
-        const file = event.target.files[0];
-        if (!file) return;
+  const typeColors = {
+    "normal": "#ccc",
+    "z": "#5cb85c",
+    "classique": "#b22222",
+    "u": "#5cb85c",
+    "mérican": "#cc3333",
+    "blaster": "#111",
+    "rêve": "casino",
+    "trésor": "#a87c4f"
+  };
 
-        message.textContent = "Chargement de l'image...";
-        const img = new Image();
-        img.onload = () => {
-          canvas.width = img.width;
-          canvas.height = img.height;
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          canvas.style.display = "block";
-          message.textContent = "Analyse en cours...";
-          card.style.display = "none"; // Cache la carte précédente
-          codeUniqueTexte.textContent = "";
+  fileInputs.forEach(input => {
+    input.addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
 
-          try {
-            const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-            const binarizer = new ZXing.GlobalHistogramBinarizer(luminanceSource);
-            const binaryBitmap = new ZXing.BinaryBitmap(binarizer);
-            const reader = new ZXing.MultiFormatReader();
-            const result = reader.decode(binaryBitmap);
-            const code = result.getText();
-            const code_unique = code.replace(/http:\/\/yw\.b-boys\.jp\//i, "");
+      message.textContent = "Chargement de l'image...";
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.style.display = "block";
+        message.textContent = "Analyse en cours...";
+        card.style.display = "none";
+        codeUniqueTexte.textContent = "";
 
-            message.textContent = "✅ QR Code détecté : " + code;
-            codeUniqueTexte.textContent = "Code Unique : " + code_unique;
+        try {
+          const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+          const binarizer = new ZXing.GlobalHistogramBinarizer(luminanceSource);
+          const binaryBitmap = new ZXing.BinaryBitmap(binarizer);
+          const reader = new ZXing.MultiFormatReader();
+          const result = reader.decode(binaryBitmap);
+          const code = result.getText();
+          const code_unique = code.replace(/http:\/\/yw\.b-boys\.jp\//i, "");
 
-            // 🔗 Indicateur de chargement pour les données
-            message.textContent = "Chargement des données...";
-            card.style.display = "none";
+          message.textContent = "✅ QR Code détecté : " + code;
+          codeUniqueTexte.textContent = "Code Unique : " + code_unique;
+          message.textContent = "Chargement des données...";
+          card.style.display = "none";
 
-            fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons")
-              .then(res => res.json())
-              .then(data => {
-                const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
-                if (medaillon) {
-                  card.innerHTML = `
-                    <div class="label">Nom :</div> ${medaillon.nomYokai}<br>
-                    <div class="label">Tribu :</div> ${medaillon.tribuYokai}<br>
-                    <div class="label">Rang :</div> ${medaillon.rangYokai}<br>
-                    <div class="label">Type :</div> ${medaillon.typeMedaillon}<br>
-                    <div class="label">Rôle :</div> ${medaillon.rôleYokai}<br>
-                    <div class="label">Élément :</div> ${medaillon.élémentYokai}<br>
-                    <div class="label">Première apparition :</div> ${medaillon.premièreApparitionYokai}<br>
-                    <div class="label">Nourriture préférée :</div> ${medaillon.nourriturePréféréeYokai}<br>
-                    <div style="margin-top:10px;">
-                      <img src="${medaillon.imageMedaillon}" alt="Médaillon">
-                      <img src="${medaillon.imageYokai}" alt="Yo-kai">
-                    </div>
-                  `;
-                  card.style.display = "block";
-                  message.textContent = "✅ Médaillon trouvé !";
+          fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatch%20%5Bjp%5DM%C3%A9daillons/medaillons")
+            .then(res => res.json())
+            .then(data => {
+              const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
+              if (medaillon) {
+                // Formatage de la nourriture préférée
+                let nourriture = medaillon.nourriturePréféréeYokai || "";
+                nourriture = nourriture.replace(/(YW1\s*:[^Y]*)\s*(YW2\+\s*:)/i, "$1<br>$2");
+
+                // Détection de la couleur selon le type
+                const type = (medaillon.typeMedaillon || "").toLowerCase();
+                const couleur = typeColors[type] || "#eee";
+
+                // Appliquer style spécial pour "rêve"
+                if (type === "rêve") {
+                  card.style.background = "radial-gradient(circle at center, #ffd700, #cc0000)";
+                  card.style.border = "3px solid #111";
+                  card.style.boxShadow = "0 0 20px rgba(0,0,0,0.5)";
                 } else {
-                  card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
-                  card.style.display = "block";
-                  message.textContent = "";
+                  card.style.background = couleur;
+                  card.style.border = "2px solid #444";
+                  card.style.boxShadow = "0 0 10px rgba(0,0,0,0.1)";
                 }
-              })
-              .catch(err => {
-                console.error(err);
-                card.innerHTML = "❌ Erreur de connexion à la base de données.";
+
+                card.innerHTML = `
+                  <div class="label">Nom :</div> ${medaillon.nomYokai}<br><br>
+                  <div class="label">Tribu :</div> ${medaillon.tribuYokai}<br><br>
+                  <div class="label">Rang :</div> ${medaillon.rangYokai}<br><br>
+                  <div class="label">Type :</div> ${medaillon.typeMedaillon}<br><br>
+                  <div class="label">Rôle :</div> ${medaillon.rôleYokai}<br><br>
+                  <div class="label">Élément :</div> ${medaillon.élémentYokai}<br><br>
+                  <div class="label">Première apparition :</div> ${medaillon.premièreApparitionYokai}<br><br>
+                  <div class="label">Nourriture préférée :</div> ${nourriture}<br><br>
+                  <div style="margin-top:10px;">
+                    <img src="${medaillon.imageMedaillon}" alt="Médaillon">
+                    <img src="${medaillon.imageYokai}" alt="Yo-kai">
+                  </div>
+                `;
+                card.style.display = "block";
+                message.textContent = "✅ Médaillon trouvé !";
+              } else {
+                card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
                 card.style.display = "block";
                 message.textContent = "";
-              });
+              }
+            })
+            .catch(err => {
+              console.error(err);
+              card.innerHTML = "❌ Erreur de connexion à la base de données.";
+              card.style.display = "block";
+              message.textContent = "";
+            });
 
-          } catch (e) {
-            message.textContent = "❌ Aucun QR code détecté.";
-            codeUniqueTexte.textContent = "";
-          }
-        };
-
-        img.onerror = () => {
-          message.textContent = "❌ Erreur de chargement de l'image.";
+        } catch (e) {
+          message.textContent = "❌ Aucun QR code détecté.";
           codeUniqueTexte.textContent = "";
-        };
-        const reader = new FileReader();
-        reader.onload = e => img.src = e.target.result;
-        reader.readAsDataURL(file);
-      });
+        }
+      };
+
+      img.onerror = () => {
+        message.textContent = "❌ Erreur de chargement de l'image.";
+        codeUniqueTexte.textContent = "";
+      };
+
+      const reader = new FileReader();
+      reader.onload = e => img.src = e.target.result;
+      reader.readAsDataURL(file);
     });
-  </script>
+  });
+</script>
+
 
 </body>
 </html>
