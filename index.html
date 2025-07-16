@@ -9,42 +9,36 @@
     canvas { margin-top: 10px; border: 1px solid #ccc; max-width: 100%; display: none; }
     #message { margin-top: 10px; font-weight: bold; }
     button { padding: 10px 20px; margin: 10px; font-size: 16px; }
-
     #card {
       display: none;
       margin: 20px auto;
       padding: 20px;
+      border: 2px solid #444;
       border-radius: 10px;
       max-width: 400px;
+      background: #f9f9f9;
       text-align: left;
-      color: #fff;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      color: black;
     }
-
-    .label {
-      font-weight: bold;
-      margin-top: 10px;
-      display: block;
-    }
-
     #card img {
-      max-width: 120px;
+      max-width: 100px;
       margin: 10px 5px;
     }
-
-    /* Couleurs par type */
-    .normal     { background-color: #888; }
-    .z          { background-color: #2e8b57; } /* Vert */
-    .classique  { background-color: #b22222; } /* Rouge foncé */
-    .u          { background-color: #2e8b57; }
-    .mérican    { background-color: #cc3333; } /* Rouge vif doux */
-    .blaster    { background-color: #222; }
-    .trésor     { background-color: #a0522d; } /* Marron clair */
-    .rêve {
-      background: radial-gradient(circle at top left, #fceabb, #f8b500);
-      border: 4px double #fff700;
+    .label {
+      font-weight: bold;
+      color: #333;
+    }
+    pre {
+      white-space: pre-wrap;
+      text-align: left;
+      background: #eee;
+      padding: 10px;
+      border-radius: 5px;
+      max-width: 400px;
+      margin: 20px auto;
+      overflow-x: auto;
       color: #000;
-      font-family: 'Georgia', serif;
     }
   </style>
 </head>
@@ -73,16 +67,13 @@
     const codeUniqueTexte = document.getElementById("code_unique_texte");
     const card = document.getElementById("card");
 
-    const typeToClass = {
-      "Normal": "normal",
-      "Z": "z",
-      "Classique": "classique",
-      "U": "u",
-      "Mérican": "mérican",
-      "Blaster": "blaster",
-      "Rêve": "rêve",
-      "Trésor": "trésor"
-    };
+    // Ta nouvelle URL API ici :
+    const apiUrl = "https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons";
+
+    // Pour contourner CORS si besoin, on pourra tester avec ce proxy (à retirer si pas nécessaire) :
+    // const proxy = "https://cors-anywhere.herokuapp.com/";
+    // Ou laisse proxy vide si ça marche sans :
+    const proxy = "";
 
     fileInputs.forEach(input => {
       input.addEventListener("change", event => {
@@ -97,7 +88,7 @@
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           canvas.style.display = "block";
           message.textContent = "Analyse en cours...";
-          card.style.display = "none";
+          card.style.display = "none"; // Cache la carte précédente
           codeUniqueTexte.textContent = "";
 
           try {
@@ -111,44 +102,28 @@
 
             message.textContent = "✅ QR Code détecté : " + code;
             codeUniqueTexte.textContent = "Code Unique : " + code_unique;
+
+            // 🔗 Indicateur de chargement pour les données
             message.textContent = "Chargement des données...";
             card.style.display = "none";
-
-            const proxy = "https://cors-anywhere.herokuapp.com/";
-            const apiUrl = "https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons";
 
             fetch(proxy + apiUrl)
               .then(res => res.json())
               .then(data => {
+                console.log("Données complètes reçues :", data);
                 const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
-                if (medaillon) {
-                  const classeType = typeToClass[medaillon.typeMedaillon] || "normal";
-                  const nourritureFormatée = (medaillon.nourriturePréféréeYokai || "").replace(/(YW\d[^:]*:)/g, "<br>$1");
 
-                  card.className = "";
-                  card.classList.add(classeType);
-
-                  card.innerHTML = `
-                    <span class="label">Nom :</span> ${medaillon.nomYokai}<br>
-                    <span class="label">Tribu :</span> ${medaillon.tribuYokai}<br>
-                    <span class="label">Rang :</span> ${medaillon.rangYokai}<br>
-                    <span class="label">Type :</span> ${medaillon.typeMedaillon || "Non défini"}<br>
-                    <span class="label">Rôle :</span> ${medaillon.rôleYokai}<br>
-                    <span class="label">Élément :</span> ${medaillon.élémentYokai}<br>
-                    <span class="label">Première apparition :</span> ${medaillon.premièreApparitionYokai}<br>
-                    <span class="label">Nourriture préférée :</span> ${nourritureFormatée}<br>
-                    <div style="margin-top:10px;">
-                      <img src="${medaillon.imageMedaillon}" alt="Médaillon">
-                      <img src="${medaillon.imageYokai}" alt="Yo-kai">
-                    </div>
-                  `;
-                  card.style.display = "block";
-                  message.textContent = "✅ Médaillon trouvé !";
-                } else {
+                if (!medaillon) {
                   card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
                   card.style.display = "block";
                   message.textContent = "";
+                  return;
                 }
+
+                console.log("Medaillon trouvé :", medaillon);
+                card.innerHTML = `<pre>${JSON.stringify(medaillon, null, 2)}</pre>`;
+                card.style.display = "block";
+                message.textContent = "✅ Médaillon trouvé, voir console et page pour détails.";
               })
               .catch(err => {
                 console.error(err);
@@ -173,5 +148,6 @@
       });
     });
   </script>
+
 </body>
 </html>
