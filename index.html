@@ -1,188 +1,163 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Scanner QR Code - Médaillons</title>
-<style>
-  body { font-family: sans-serif; text-align: center; padding: 20px; }
-  canvas { margin-top: 10px; border: 1px solid #ccc; max-width: 100%; display: none; }
-  #message { margin-top: 10px; font-weight: bold; }
-  button { padding: 10px 20px; margin: 10px; font-size: 16px; cursor: pointer; }
-  #card {
-    display: none;
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 10px;
-    max-width: 400px;
-    text-align: left;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    color: black;
-    white-space: pre-line; /* pour interpréter \n dans texte */
-  }
-  #card img {
-    max-width: 100px;
-    margin: 10px 5px;
-    vertical-align: middle;
-  }
-  .label {
-    font-weight: bold;
-    color: #333;
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Scanner QR Code</title>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 20px; }
+    canvas { margin-top: 10px; border: 1px solid #ccc; max-width: 100%; display: none; }
+    #message { margin-top: 10px; font-weight: bold; }
+    button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+    #card {
+      display: none;
+      margin: 20px auto;
+      padding: 20px;
+      border: 2px solid #444;
+      border-radius: 10px;
+      max-width: 400px;
+      background: #f9f9f9;
+      text-align: left;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    #card img {
+      max-width: 100px;
+      margin: 10px 5px;
+    }
+    .label {
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
 </head>
 <body>
 
-<h1>Scanner un QR Code</h1>
+  <h1>Scanner un QR Code</h1>
 
-<button onclick="document.getElementById('file-camera').click()">📷 Prendre une photo</button>
-<button onclick="document.getElementById('file-gallery').click()">🖼️ Choisir une photo</button>
+  <button onclick="document.getElementById('file-camera').click()">📷 Prendre une photo</button>
+  <button onclick="document.getElementById('file-gallery').click()">🖼️ Choisir une photo</button>
 
-<input type="file" accept="image/*" capture="environment" id="file-camera" style="display:none" />
-<input type="file" accept="image/*" id="file-gallery" style="display:none" />
+  <input type="file" accept="image/*" capture="environment" id="file-camera" style="display:none" />
+  <input type="file" accept="image/*" id="file-gallery" style="display:none" />
 
-<canvas id="canvas"></canvas>
-<div id="message">Aucune analyse en cours.</div>
-<div id="code_unique_texte"></div>
-<div id="card"></div>
+  <canvas id="canvas"></canvas>
+  <div id="message">Aucune analyse en cours.</div>
+  <div id="code_unique_texte"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
-<script>
-  const fileInputs = [document.getElementById("file-camera"), document.getElementById("file-gallery")];
-  const canvas = document.getElementById("canvas");
-  const ctx = canvas.getContext("2d");
-  const message = document.getElementById("message");
-  const codeUniqueTexte = document.getElementById("code_unique_texte");
-  const card = document.getElementById("card");
+  <div id="card"></div>
 
-  const apiUrl = "https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons";
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
+  <script>
+    const fileInputs = [document.getElementById("file-camera"), document.getElementById("file-gallery")];
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const message = document.getElementById("message");
+    const codeUniqueTexte = document.getElementById("code_unique_texte");
+    const card = document.getElementById("card");
 
-  // Couleurs selon le typeMédaillon (ordre : Normal, Z, Classique, U, Mérican, Blaster, Rêve, Trésor)
-  const typeColors = {
-    "Normal": "#808080",          // gris
-    "Z": "#008000",               // vert
-    "Classique": "#8B0000",       // rouge foncé
-    "U": "#008000",               // même vert que Z
-    "Mérican": "#FF4500",         // rouge un peu pétant
-    "Blaster": "#000000",         // noir
-    "Rêve": "radial-gradient(circle, #fff 30%, #000 80%)", // effet jeton casino (sera en JS géré différemment)
-    "Trésor": "#A0522D"           // marron clair
-  };
+    const couleursType = {
+      "Normal": "#ccc",
+      "Z": "#4CAF50",
+      "U": "#4CAF50",
+      "Classique": "#b22222",
+      "Mérican": "#d03232",
+      "Blaster": "#000",
+      "Rêve": "repeating-conic-gradient(#f0d90a 0% 12.5%, #c00000 12.5% 25%, #009bff 25% 37.5%, #f0d90a 37.5% 50%, #c00000 50% 62.5%, #009bff 62.5% 75%, #f0d90a 75% 87.5%, #c00000 87.5% 100%)",
+      "Trésor": "#a0522d"
+    };
 
-  function getCardBackground(type) {
-    if (type === "Rêve") {
-      // On simule un jeton casino en CSS inline via un background-image (radial gradient)
-      return "radial-gradient(circle, #fff 30%, #000 80%)";
-    }
-    return typeColors[type] || "#f9f9f9"; // fallback
-  }
+    fileInputs.forEach(input => {
+      input.addEventListener("change", event => {
+        const file = event.target.files[0];
+        if (!file) return;
 
-  fileInputs.forEach(input => {
-    input.addEventListener("change", event => {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      message.textContent = "Chargement de l'image...";
-      const img = new Image();
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        canvas.style.display = "block";
-        message.textContent = "Analyse en cours...";
-        card.style.display = "none"; 
-        codeUniqueTexte.textContent = "";
-
-        try {
-          const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
-          const binarizer = new ZXing.GlobalHistogramBinarizer(luminanceSource);
-          const binaryBitmap = new ZXing.BinaryBitmap(binarizer);
-          const reader = new ZXing.MultiFormatReader();
-          const result = reader.decode(binaryBitmap);
-          const code = result.getText();
-          const code_unique = code.replace(/http:\/\/yw\.b-boys\.jp\//i, "");
-
-          message.textContent = "✅ QR Code détecté : " + code;
-          codeUniqueTexte.textContent = "Code Unique : " + code_unique;
-
-          message.textContent = "Chargement des données...";
+        message.textContent = "Chargement de l'image...";
+        const img = new Image();
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.style.display = "block";
+          message.textContent = "Analyse en cours...";
           card.style.display = "none";
+          codeUniqueTexte.textContent = "";
 
-          fetch(apiUrl)
-            .then(res => res.json())
-            .then(data => {
-              console.log("Données complètes reçues :", data);
-              const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
+          try {
+            const luminanceSource = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+            const binarizer = new ZXing.GlobalHistogramBinarizer(luminanceSource);
+            const binaryBitmap = new ZXing.BinaryBitmap(binarizer);
+            const reader = new ZXing.MultiFormatReader();
+            const result = reader.decode(binaryBitmap);
+            const code = result.getText();
+            const code_unique = code.replace(/http:\/\/yw\.b-boys\.jp\//i, "");
 
-              if (!medaillon) {
-                card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
+            message.textContent = "✅ QR Code détecté : " + code;
+            codeUniqueTexte.textContent = "Code Unique : " + code_unique;
+
+            message.textContent = "Chargement des données...";
+            card.style.display = "none";
+
+            fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons")
+              .then(res => res.json())
+              .then(data => {
+                const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
+                if (medaillon) {
+                  let nourriture = medaillon.nourriturePréféréeYokai || "";
+                  const nourritureFormattee = nourriture.replace(/ ?(YW\d+\+? *:)/g, '\n$1');
+
+                  let specialText = "";
+                  if (medaillon.médaillon_spécial && medaillon.médaillon_spécial.toLowerCase() !== "non") {
+                    specialText = `<div class="label">Spécial :</div> ${medaillon.médaillon_spécial}<br><br>`;
+                  }
+
+                  const bgColor = couleursType[medaillon.typeMédaillon] || "#f9f9f9";
+                  card.style.background = bgColor.includes("gradient") ? bgColor : "";
+                  card.style.backgroundColor = bgColor.includes("gradient") ? "" : bgColor;
+
+                  card.innerHTML = `
+                    <div class="label">Nom :</div> ${medaillon.nomYokai}<br><br>
+                    ${specialText}
+                    <div class="label">Type :</div> ${medaillon.typeMédaillon}<br><br>
+                    <div class="label">Tribu :</div> ${medaillon.tribuYokai}<br><br>
+                    <div class="label">Rang :</div> ${medaillon.rangYokai}<br><br>
+                    <div class="label">Rôle :</div> ${medaillon.rôleYokai}<br><br>
+                    <div class="label">Élément :</div> ${medaillon.élémentYokai}<br><br>
+                    <div class="label">Première apparition :</div> ${medaillon.premièreApparitionYokai}<br><br>
+                    <div class="label">Nourriture préférée :</div><br>${nourritureFormattee}<br><br>
+                    <img src="${medaillon.imageMédaillon}" alt="Médaillon">
+                    <img src="${medaillon.imageYokai}" alt="Yo-kai">
+                  `;
+                  card.style.display = "block";
+                  message.textContent = "✅ Médaillon trouvé !";
+                } else {
+                  card.innerHTML = "❌ Médaillon non trouvé dans la base de données.";
+                  card.style.display = "block";
+                  message.textContent = "";
+                }
+              })
+              .catch(err => {
+                console.error(err);
+                card.innerHTML = "❌ Erreur de connexion à la base de données.";
                 card.style.display = "block";
                 message.textContent = "";
-                return;
-              }
+              });
 
-              console.log("Medaillon trouvé :", medaillon);
+          } catch (e) {
+            message.textContent = "❌ Aucun QR code détecté.";
+            codeUniqueTexte.textContent = "";
+          }
+        };
 
-              // Préparation du texte avec saut de ligne entre champs
-              // Pour nourriture, on remplace " YW2+ :" par \nYW2+ : pour avoir retour à la ligne
-              let nourritureFormattee = medaillon.nourriturePréféréeYokai.replace(/ YW2\+ :/g, '\nYW2+ :');
-
-              // Contenu HTML (textuel + images)
-              const html = `
-<span class="label">Nom :</span> ${medaillon.nomYokai}\n
-<span class="label">Tribu :</span> ${medaillon.tribuYokai}\n
-<span class="label">Rang :</span> ${medaillon.rangYokai}\n
-<span class="label">Type :</span> ${medaillon.typeMédaillon}\n
-<span class="label">Rôle :</span> ${medaillon.rôleYokai}\n
-<span class="label">Élément :</span> ${medaillon.élémentYokai}\n
-<span class="label">Première apparition :</span> ${medaillon.premièreApparitionYokai}\n
-<span class="label">Nourriture préférée :</span>\n${nourritureFormattee}\n
-\n
-<img src="${medaillon.imageMédaillon}" alt="Image Médaillon" /> 
-<img src="${medaillon.imageYokai}" alt="Image Yokai" />
-              `;
-
-              // Comme on veut que \n soit interprété, on remplace \n par <br> en innerHTML
-              card.innerHTML = html.replace(/\n/g, "<br>");
-
-              // Background selon type
-              if (medaillon.typeMédaillon === "Rêve") {
-                card.style.background = getCardBackground("Rêve");
-                card.style.color = "white";
-                card.style.border = "2px solid white";
-              } else {
-                card.style.background = getCardBackground(medaillon.typeMédaillon);
-                card.style.color = medaillon.typeMédaillon === "Blaster" ? "white" : "black";
-                card.style.border = "2px solid #444";
-              }
-
-              card.style.display = "block";
-              message.textContent = "✅ Médaillon trouvé et affiché.";
-            })
-            .catch(err => {
-              console.error(err);
-              card.innerHTML = "❌ Erreur de connexion à la base de données.";
-              card.style.display = "block";
-              message.textContent = "";
-            });
-
-        } catch (e) {
-          message.textContent = "❌ Aucun QR code détecté.";
+        img.onerror = () => {
+          message.textContent = "❌ Erreur de chargement de l'image.";
           codeUniqueTexte.textContent = "";
-        }
-      };
-
-      img.onerror = () => {
-        message.textContent = "❌ Erreur de chargement de l'image.";
-        codeUniqueTexte.textContent = "";
-      };
-
-      const reader = new FileReader();
-      reader.onload = e => img.src = e.target.result;
-      reader.readAsDataURL(file);
+        };
+        const reader = new FileReader();
+        reader.onload = e => img.src = e.target.result;
+        reader.readAsDataURL(file);
+      });
     });
-  });
-</script>
+  </script>
 
 </body>
 </html>
