@@ -13,7 +13,6 @@
       display: none;
       margin: 20px auto;
       padding: 20px;
-      border: 2px solid #444;
       border-radius: 10px;
       max-width: 400px;
       background: #f9f9f9;
@@ -60,10 +59,10 @@
       "Z": "#4CAF50",
       "U": "#4CAF50",
       "Classique": "#b22222",
-      "Mérican": "#d03232",
-      "Blaster": "#000",
-      "Rêve": "repeating-conic-gradient(#f0d90a 0% 12.5%, #c00000 12.5% 25%, #009bff 25% 37.5%, #f0d90a 37.5% 50%, #c00000 50% 62.5%, #009bff 62.5% 75%, #f0d90a 75% 87.5%, #c00000 87.5% 100%)",
-      "Trésor": "#a0522d"
+      "Méricain": "#ff3c3c",
+      "Blaster": "#000000",
+      "Rêve": "#a78bfa",
+      "Trésor": "#a97c50"
     };
 
     fileInputs.forEach(input => {
@@ -91,41 +90,34 @@
             const code = result.getText();
             const code_unique = code.replace(/http:\/\/yw\.b-boys\.jp\//i, "");
 
-            message.textContent = "✅ QR Code détecté : " + code;
-            codeUniqueTexte.textContent = "Code Unique : " + code_unique;
-
             message.textContent = "Chargement des données...";
-            card.style.display = "none";
+            codeUniqueTexte.textContent = "Code Unique : " + code_unique;
 
             fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons")
               .then(res => res.json())
               .then(data => {
                 const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
                 if (medaillon) {
-                  let nourriture = medaillon.nourriturePréféréeYokai || "";
-                  const nourritureFormattee = nourriture.replace(/ ?(YW\d+\+? *:)/g, '\n$1');
+                  let couleurFond = couleursType[medaillon.typeMédaillon] || "#f9f9f9";
+                  card.style.background = couleurFond;
+                  card.style.color = (couleurFond.toLowerCase() === "#000000") ? "#fff" : "#000";
 
-                  let specialText = "";
-                  if (medaillon.médaillon_spécial && medaillon.médaillon_spécial.toLowerCase() !== "non") {
-                    specialText = `<div class="label">Spécial :</div> ${medaillon.médaillon_spécial}<br><br>`;
-                  }
-
-                  const bgColor = couleursType[medaillon.typeMédaillon] || "#f9f9f9";
-                  card.style.background = bgColor.includes("gradient") ? bgColor : "";
-                  card.style.backgroundColor = bgColor.includes("gradient") ? "" : bgColor;
+                  const nourriture = medaillon.nourriturePréféréeYokai?.replace(/YW\d+ *:/g, '\n$&');
 
                   card.innerHTML = `
                     <div class="label">Nom :</div> ${medaillon.nomYokai}<br><br>
-                    ${specialText}
+                    ${medaillon.médaillonSpécial && medaillon.médaillonSpécial.toLowerCase() !== "non" ? `<div class="label">Spécial :</div> ${medaillon.médaillonSpécial}<br><br>` : ""}
                     <div class="label">Type :</div> ${medaillon.typeMédaillon}<br><br>
                     <div class="label">Tribu :</div> ${medaillon.tribuYokai}<br><br>
                     <div class="label">Rang :</div> ${medaillon.rangYokai}<br><br>
                     <div class="label">Rôle :</div> ${medaillon.rôleYokai}<br><br>
                     <div class="label">Élément :</div> ${medaillon.élémentYokai}<br><br>
                     <div class="label">Première apparition :</div> ${medaillon.premièreApparitionYokai}<br><br>
-                    <div class="label">Nourriture préférée :</div><br>${nourritureFormattee}<br><br>
-                    <img src="${medaillon.imageMédaillon}" alt="Médaillon">
-                    <img src="${medaillon.imageYokai}" alt="Yo-kai">
+                    <div class="label">Nourriture préférée :</div><pre style="margin:0">${nourriture}</pre><br>
+                    <div style="margin-top:10px;">
+                      <img src="${medaillon.imageMédaillon}" alt="Médaillon">
+                      <img src="${medaillon.imageYokai}" alt="Yo-kai">
+                    </div>
                   `;
                   card.style.display = "block";
                   message.textContent = "✅ Médaillon trouvé !";
