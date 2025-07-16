@@ -9,6 +9,7 @@
     canvas { margin-top: 10px; border: 1px solid #ccc; max-width: 100%; display: none; }
     #message { margin-top: 10px; font-weight: bold; }
     button { padding: 10px 20px; margin: 10px; font-size: 16px; }
+
     #card {
       display: none;
       margin: 20px auto;
@@ -16,19 +17,34 @@
       border-radius: 10px;
       max-width: 400px;
       text-align: left;
-      color: #000;
+      color: #fff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
     }
-    #card img {
-      max-width: 100px;
-      margin: 10px 5px;
-    }
+
     .label {
       font-weight: bold;
-      color: #333;
       margin-top: 10px;
+      display: block;
     }
-    .info-section {
-      margin-bottom: 10px;
+
+    #card img {
+      max-width: 120px;
+      margin: 10px 5px;
+    }
+
+    /* Couleurs par type */
+    .normal     { background-color: #888; }
+    .z          { background-color: #2e8b57; } /* Vert */
+    .classique  { background-color: #b22222; } /* Rouge foncé */
+    .u          { background-color: #2e8b57; }
+    .mérican    { background-color: #cc3333; } /* Rouge vif doux */
+    .blaster    { background-color: #222; }
+    .trésor     { background-color: #a0522d; } /* Marron clair */
+    .rêve {
+      background: radial-gradient(circle at top left, #fceabb, #f8b500);
+      border: 4px double #fff700;
+      color: #000;
+      font-family: 'Georgia', serif;
     }
   </style>
 </head>
@@ -45,6 +61,7 @@
   <canvas id="canvas"></canvas>
   <div id="message">Aucune analyse en cours.</div>
   <div id="code_unique_texte"></div>
+
   <div id="card"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.19.1/umd/index.min.js"></script>
@@ -56,15 +73,15 @@
     const codeUniqueTexte = document.getElementById("code_unique_texte");
     const card = document.getElementById("card");
 
-    const typeColors = {
-      "normal": "#ccc",
-      "z": "#5cb85c",
-      "classique": "#b22222",
-      "u": "#5cb85c",
-      "mérican": "#cc3333",
-      "blaster": "#111",
-      "rêve": "casino",
-      "trésor": "#a87c4f"
+    const typeToClass = {
+      "Normal": "normal",
+      "Z": "z",
+      "Classique": "classique",
+      "U": "u",
+      "Mérican": "mérican",
+      "Blaster": "blaster",
+      "Rêve": "rêve",
+      "Trésor": "trésor"
     };
 
     fileInputs.forEach(input => {
@@ -95,37 +112,31 @@
             message.textContent = "✅ QR Code détecté : " + code;
             codeUniqueTexte.textContent = "Code Unique : " + code_unique;
             message.textContent = "Chargement des données...";
+            card.style.display = "none";
 
-            fetch("https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons")
+            const proxy = "https://cors-anywhere.herokuapp.com/";
+            const apiUrl = "https://api.sheety.co/d7cbcb1c41ac163fbaff577fe727b2bd/collectionYoKaiWatchJp/medaillons";
+
+            fetch(proxy + apiUrl)
               .then(res => res.json())
               .then(data => {
                 const medaillon = data.medaillons.find(m => m.codeUnique === code_unique);
                 if (medaillon) {
-                  const typeOriginal = medaillon.typeMedaillon?.trim() || "";
-                  const typeCouleur = typeOriginal.toLowerCase();
+                  const classeType = typeToClass[medaillon.typeMedaillon] || "normal";
+                  const nourritureFormatée = (medaillon.nourriturePréféréeYokai || "").replace(/(YW\d[^:]*:)/g, "<br>$1");
 
-                  if (typeCouleur === "rêve") {
-                    card.style.background = "radial-gradient(circle at center, #ffd700, #cc0000)";
-                    card.style.border = "3px solid #111";
-                    card.style.boxShadow = "0 0 20px rgba(0,0,0,0.5)";
-                  } else {
-                    card.style.background = typeColors[typeCouleur] || "#eee";
-                    card.style.border = "2px solid #444";
-                    card.style.boxShadow = "0 0 10px rgba(0,0,0,0.1)";
-                  }
-
-                  // Traitement retour à la ligne pour la nourriture préférée
-                  const nourriture = (medaillon.nourriturePréféréeYokai || "").replace(/YW1\s*:/g, "<br>YW1 :").replace(/YW2\+\s*:/g, "<br>YW2+ :").replace(/^<br>/, "");
+                  card.className = "";
+                  card.classList.add(classeType);
 
                   card.innerHTML = `
-                    <div class="info-section"><span class="label">Nom :</span><br>${medaillon.nomYokai}</div>
-                    <div class="info-section"><span class="label">Tribu :</span><br>${medaillon.tribuYokai}</div>
-                    <div class="info-section"><span class="label">Rang :</span><br>${medaillon.rangYokai}</div>
-                    <div class="info-section"><span class="label">Type :</span><br>${typeOriginal}</div>
-                    <div class="info-section"><span class="label">Rôle :</span><br>${medaillon.rôleYokai}</div>
-                    <div class="info-section"><span class="label">Élément :</span><br>${medaillon.élémentYokai}</div>
-                    <div class="info-section"><span class="label">Première apparition :</span><br>${medaillon.premièreApparitionYokai}</div>
-                    <div class="info-section"><span class="label">Nourriture préférée :</span><br>${nourriture}</div>
+                    <span class="label">Nom :</span> ${medaillon.nomYokai}<br>
+                    <span class="label">Tribu :</span> ${medaillon.tribuYokai}<br>
+                    <span class="label">Rang :</span> ${medaillon.rangYokai}<br>
+                    <span class="label">Type :</span> ${medaillon.typeMedaillon || "Non défini"}<br>
+                    <span class="label">Rôle :</span> ${medaillon.rôleYokai}<br>
+                    <span class="label">Élément :</span> ${medaillon.élémentYokai}<br>
+                    <span class="label">Première apparition :</span> ${medaillon.premièreApparitionYokai}<br>
+                    <span class="label">Nourriture préférée :</span> ${nourritureFormatée}<br>
                     <div style="margin-top:10px;">
                       <img src="${medaillon.imageMedaillon}" alt="Médaillon">
                       <img src="${medaillon.imageYokai}" alt="Yo-kai">
@@ -162,6 +173,5 @@
       });
     });
   </script>
-
 </body>
 </html>
